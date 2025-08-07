@@ -40,14 +40,14 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-[2147483647] w-96 bg-white rounded-lg shadow-2xl border border-gray-300 font-sans flex flex-col">
+    <div className="fixed top-4 right-4 z-2147483647 w-96 bg-white rounded-lg shadow-2xl border border-gray-300 font-sans flex flex-col">
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-800">Web-K AI</h2>
         <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
           &times;
         </button>
       </div>
-      <div className="p-4 flex-grow max-h-96 overflow-y-auto">
+      <div className="p-4 grow max-h-96 overflow-y-auto">
         <div className="p-2 rounded-md bg-gray-50 max-h-40 overflow-y-auto mb-4">
           <p className="text-sm text-gray-700 whitespace-pre-wrap">
             <strong>Selected Text:</strong>
@@ -68,7 +68,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
         <textarea
           rows={3}
           placeholder="Ask a question about the selected text..."
-          className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           disabled={isLoading}
