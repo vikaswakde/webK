@@ -1,0 +1,15 @@
+{
+  "name": "web-k-monorepo",
+  "private": true,
+  "scripts": {
+    "dev:ext": "pnpm --filter extension dev",
+    "build:ext": "pnpm --filter extension build",
+    "dev:backend": "pnpm --filter backend dev",
+    "build:backend": "pnpm --filter backend build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "packageManager": "pnpm@8.0.0"
+}
+
