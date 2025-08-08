@@ -45,7 +45,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
 
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
-      <div className="relative rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] text-slate-100">
+      <div className="relative rounded-2xl border border-white/15 bg-neutral-500 backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] text-slate-100">
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold tracking-wide">Web‑K</span>

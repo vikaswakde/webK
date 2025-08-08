@@ -20,9 +20,14 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    "types": ["chrome"]
+    "types": ["chrome"],
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "vite.config.ts", "manifest.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
 
