@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 interface ChatModalProps {
   selectedText: string;
@@ -11,33 +11,44 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAsk = () => {
+  const handleAsk = useCallback(() => {
     if (!question.trim() || isLoading) return;
 
     setIsLoading(true);
     setError('');
     setResponse('');
 
-    chrome.runtime.sendMessage(
-      {
-        type: 'ASK_AI',
-        payload: {
-          selectedText,
-          question,
-        },
-      },
-      (res) => {
-        setIsLoading(false);
-        if (chrome.runtime.lastError) {
-          setError(`Error: ${chrome.runtime.lastError.message}`);
-        } else if (res.success) {
-          setResponse(res.response);
-        } else {
-          setError(`Error: ${res.error || 'An unknown error occurred.'}`);
+    // Stream directly from the backend; background page not needed for streaming
+    // Adjust URL if you make it configurable via options later
+    const API_URL = 'http://localhost:3001/api/ask';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selectedText, question }),
+    })
+      .then(async (res) => {
+        if (!res.ok || !res.body) {
+          const text = await res.text().catch(() => '');
+          throw new Error(text || `HTTP ${res.status}`);
         }
-      }
-    );
-  };
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          accumulated += chunk;
+          setResponse((prev) => prev + chunk);
+        }
+        return accumulated;
+      })
+      .catch((err) => {
+        setError(`Error: ${err.message || String(err)}`);
+      })
+      .finally(() => setIsLoading(false));
+  }, [question, isLoading, selectedText]);
 
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-96 bg-white rounded-lg shadow-2xl border border-gray-300 font-sans flex flex-col">
