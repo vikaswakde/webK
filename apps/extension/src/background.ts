@@ -2,7 +2,7 @@ console.log('background script loaded');
 
 const API_URL = 'http://localhost:3001/api/ask'; // Your backend server URL
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.type === 'ASK_AI') {
     console.log('Received message, forwarding to backend...');
 

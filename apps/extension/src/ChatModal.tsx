@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 
@@ -9,7 +9,9 @@ interface ChatModalProps {
 
 const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
   const [question, setQuestion] = useState('');
-  const [showSelection, setShowSelection] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { messages, sendMessage, status, stop, error: chatError } = useChat({
     transport: new DefaultChatTransport({
@@ -40,8 +42,81 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
 
   const handleCopy = useCallback(() => {
     if (!assistantText) return;
-    navigator.clipboard?.writeText(assistantText).catch(() => {});
+    navigator.clipboard
+      ?.writeText(assistantText)
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1200);
+      })
+      .catch(() => {});
   }, [assistantText]);
+
+  // Focus the textarea on mount and when returning to ready state
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (status === 'ready') {
+      textareaRef.current?.focus();
+    }
+  }, [status]);
+
+  // Close on Escape
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  // Type-to-focus: if user starts typing while modal is open, direct input to the textarea
+  useEffect(() => {
+    const onAnyKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTypingTarget =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.isContentEditable;
+      if (isTypingTarget) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key.length === 1) {
+        textareaRef.current?.focus();
+        setQuestion((prev) => prev + e.key);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onAnyKey);
+    return () => window.removeEventListener('keydown', onAnyKey);
+  }, []);
+
+  // Auto-scroll messages to bottom on update
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, status]);
+
+  const onTextareaKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (status === 'ready' && question.trim()) handleAsk();
+      }
+    },
+    [handleAsk, question, status]
+  );
+
+  const onTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setQuestion(e.target.value);
+    // Auto-grow textarea height
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${Math.min(el.scrollHeight, 200)}px`; // cap growth
+    }
+  }, []);
 
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
@@ -53,7 +128,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
           </div>
           <div className="flex items-center gap-3">
             {assistantText && (
-              <button onClick={handleCopy} className="text-xs text-sky-300 hover:text-sky-200">Copy</button>
+              <button onClick={handleCopy} className="text-xs text-sky-300 hover:text-sky-200" aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
             )}
             <button
               onClick={onClose}
@@ -65,19 +140,11 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
           </div>
         </div>
 
-        <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
+        <div className="px-4 py-3 max-h-[60vh] overflow-y-auto" ref={scrollContainerRef}>
           <div className="mb-3">
-            <button
-              onClick={() => setShowSelection((s) => !s)}
-              className="text-xs text-slate-200/80 hover:text-white underline underline-offset-4"
-            >
-              {showSelection ? 'Hide selection' : 'Show selection'}
-            </button>
-            {showSelection && (
-              <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 max-h-40 overflow-y-auto">
-                <p className="text-xs whitespace-pre-wrap leading-relaxed text-slate-200/90">{selectedText}</p>
-              </div>
-            )}
+            <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 max-h-40 overflow-y-auto">
+              <p className="text-xs whitespace-pre-wrap leading-relaxed text-slate-200/90">{selectedText}</p>
+            </div>
           </div>
 
           {(status === 'submitted' || status === 'streaming') && (
@@ -111,18 +178,24 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
 
         <div className="px-4 pb-4 pt-2 border-t border-white/10">
           <textarea
+            ref={textareaRef}
             rows={3}
             placeholder="Ask about the selection…"
             className="w-full resize-none rounded-xl text-sm px-3 py-2 bg-white/8 border border-white/15 placeholder:text-slate-300/60 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-white/20 text-slate-100"
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={onTextareaChange}
+            onKeyDown={onTextareaKeyDown}
             disabled={status !== 'ready'}
           />
+          <div className="mt-2 text-[11px] text-slate-300/70">
+            Enter to send • Shift+Enter for newline • Esc to close
+          </div>
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={handleAsk}
               className="flex-1 py-2 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:opacity-60 disabled:cursor-not-allowed"
-              disabled={status !== 'ready'}
+              disabled={status !== 'ready' || !question.trim()}
+              aria-label="Send message"
             >
               {status === 'ready' ? 'Ask' : 'Streaming…'}
             </button>
