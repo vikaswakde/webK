@@ -1,36 +1,26 @@
 import { NextResponse } from 'next/server';
 import { google } from '@ai-sdk/google';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages, UIMessage } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { selectedText, question } = body as { selectedText?: string; question?: string };
+    const { messages, selectedText } = body as { messages?: UIMessage[]; selectedText?: string };
 
-    if (!selectedText || !question) {
-      return NextResponse.json(
-        { error: 'Missing selectedText or question in request body' },
-        { status: 400 }
-      );
+    if (!Array.isArray(messages)) {
+      return NextResponse.json({ error: 'Missing messages' }, { status: 400 });
     }
-
-    const prompt = [
-      'You are a concise and helpful assistant. Given the selected web page text and a user question, provide a clear, direct answer. If the answer is not in the text, state assumptions briefly.',
-      '',
-      `Selected text (may be truncated):\n${selectedText.slice(0, 4000)}`,
-      '',
-      `User question: ${question}`,
-    ].join('\n');
 
     const result = streamText({
       model: google('gemini-2.5-flash'),
-      prompt,
+      system: `You are a concise and helpful assistant. Use the provided selected web page text as primary context when relevant. If the answer isn't in the text, state assumptions briefly.\n\nSelected text (may be truncated):\n${(selectedText ?? '').slice(0, 4000)}`,
+      messages: convertToModelMessages(messages),
     });
 
-    console.log(result);
-
-    // Stream plain text to the client for simple consumption by the extension
-    return result.toTextStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('Error processing request:', error);
     return NextResponse.json(

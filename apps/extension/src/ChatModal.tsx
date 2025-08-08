@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 
 interface ChatModalProps {
   selectedText: string;
@@ -7,90 +9,134 @@ interface ChatModalProps {
 
 const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
   const [question, setQuestion] = useState('');
-  const [response, setResponse] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [showSelection, setShowSelection] = useState(false);
+
+  const { messages, sendMessage, status, stop, error: chatError } = useChat({
+    transport: new DefaultChatTransport({
+      api: 'http://localhost:3001/api/ask',
+      // Attach selected text on every request
+      body: () => ({ selectedText }),
+    }),
+  });
 
   const handleAsk = useCallback(() => {
-    if (!question.trim() || isLoading) return;
+    if (!question.trim()) return;
+    sendMessage({ text: question });
+    setQuestion('');
+  }, [question, sendMessage]);
 
-    setIsLoading(true);
-    setError('');
-    setResponse('');
+  const handleStop = useCallback(() => {
+    stop();
+  }, [stop]);
 
-    // Stream directly from the backend; background page not needed for streaming
-    // Adjust URL if you make it configurable via options later
-    const API_URL = 'http://localhost:3001/api/ask';
+  const assistantText = useMemo(() => {
+    const assistants = messages.filter((m) => m.role === 'assistant');
+    if (assistants.length === 0) return '';
+    const last = assistants[assistants.length - 1];
+    return last.parts
+      .map((p) => (p.type === 'text' ? p.text : ''))
+      .join('');
+  }, [messages]);
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selectedText, question }),
-    })
-      .then(async (res) => {
-        if (!res.ok || !res.body) {
-          const text = await res.text().catch(() => '');
-          throw new Error(text || `HTTP ${res.status}`);
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          accumulated += chunk;
-          setResponse((prev) => prev + chunk);
-        }
-        return accumulated;
-      })
-      .catch((err) => {
-        setError(`Error: ${err.message || String(err)}`);
-      })
-      .finally(() => setIsLoading(false));
-  }, [question, isLoading, selectedText]);
+  const handleCopy = useCallback(() => {
+    if (!assistantText) return;
+    navigator.clipboard?.writeText(assistantText).catch(() => {});
+  }, [assistantText]);
 
   return (
-    <div className="fixed top-4 right-4 z-2147483647 w-96 bg-white rounded-lg shadow-2xl border border-gray-300 font-sans flex flex-col">
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800">Web-K AI</h2>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
-          &times;
-        </button>
-      </div>
-      <div className="p-4 grow max-h-96 overflow-y-auto">
-        <div className="p-2 rounded-md bg-gray-50 max-h-40 overflow-y-auto mb-4">
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">
-            <strong>Selected Text:</strong>
-            <br />
-            {selectedText}
-          </p>
+    <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
+      <div className="relative rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] text-slate-100">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold tracking-wide">Web‑K</span>
+            <span className="text-[10px] px-2 py-[2px] rounded-full bg-white/10 border border-white/10">Beta</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {assistantText && (
+              <button onClick={handleCopy} className="text-xs text-sky-300 hover:text-sky-200">Copy</button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-7 h-7 grid place-items-center rounded-full hover:bg-white/10 text-slate-200"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
-        {isLoading && <p className="text-sm text-center text-gray-500">Asking AI...</p>}
-        {error && <p className="text-sm text-red-600 bg-red-100 p-2 rounded-md">{error}</p>}
-        {response && (
-          <div className="bg-blue-50 p-3 rounded-md">
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{response}</p>
+        <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
+          <div className="mb-3">
+            <button
+              onClick={() => setShowSelection((s) => !s)}
+              className="text-xs text-slate-200/80 hover:text-white underline underline-offset-4"
+            >
+              {showSelection ? 'Hide selection' : 'Show selection'}
+            </button>
+            {showSelection && (
+              <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 max-h-40 overflow-y-auto">
+                <p className="text-xs whitespace-pre-wrap leading-relaxed text-slate-200/90">{selectedText}</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div className="p-4 border-t border-gray-200">
-        <textarea
-          rows={3}
-          placeholder="Ask a question about the selected text..."
-          className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          disabled={isLoading}
-        />
-        <button
-          onClick={handleAsk}
-          className="mt-2 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-semibold disabled:bg-gray-400"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Thinking...' : 'Ask'}
-        </button>
+
+          {(status === 'submitted' || status === 'streaming') && (
+            <div className="flex items-center gap-2 text-xs text-slate-300/80 mb-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Streaming…
+            </div>
+          )}
+
+          {(chatError) && (
+            <div className="text-xs bg-rose-500/15 text-rose-200 border border-rose-500/30 rounded-xl p-3 mb-2">
+              {chatError?.message}
+            </div>
+          )}
+
+          {messages.length > 0 && (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              {messages.map((m) => (
+                <div key={m.id} className="mb-2 text-sm leading-relaxed">
+                  <span className="opacity-70 mr-1">{m.role === 'user' ? 'You:' : 'AI:'}</span>
+                  {m.parts.map((part, i) =>
+                    part.type === 'text' ? (
+                      <span key={`${m.id}-${i}`} className="text-slate-100 whitespace-pre-wrap">{part.text}</span>
+                    ) : null
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 pb-4 pt-2 border-t border-white/10">
+          <textarea
+            rows={3}
+            placeholder="Ask about the selection…"
+            className="w-full resize-none rounded-xl text-sm px-3 py-2 bg-white/8 border border-white/15 placeholder:text-slate-300/60 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-white/20 text-slate-100"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            disabled={status !== 'ready'}
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={handleAsk}
+              className="flex-1 py-2 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={status !== 'ready'}
+            >
+              {status === 'ready' ? 'Ask' : 'Streaming…'}
+            </button>
+            {(status === 'submitted' || status === 'streaming') && (
+              <button
+                onClick={handleStop}
+                className="px-3 py-2 rounded-xl text-sm border border-white/15 bg-white/5 hover:bg-white/10"
+                type="button"
+              >
+                Stop
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
