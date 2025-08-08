@@ -2,12 +2,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 
+interface PageContext {
+  title: string;
+  url: string;
+  lang: string;
+  metaDescription?: string;
+  blockText?: string;
+  beforeText?: string;
+  afterText?: string;
+  selectionHtml?: string;
+}
+
 interface ChatModalProps {
   selectedText: string;
+  pageContext?: PageContext;
   onClose: () => void;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
+const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClose }) => {
   const [question, setQuestion] = useState('');
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -17,7 +29,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
     transport: new DefaultChatTransport({
       api: 'http://localhost:3001/api/ask',
       // Attach selected text on every request
-      body: () => ({ selectedText }),
+      body: () => ({ selectedText, pageContext }),
     }),
   });
 
@@ -181,7 +193,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, onClose }) => {
             ref={textareaRef}
             rows={3}
             placeholder="Ask about the selection…"
-            className="w-full resize-none rounded-xl text-sm px-3 py-2 bg-white/8 border border-white/15 placeholder:text-slate-300/60 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-white/20 text-slate-100"
+            className="w-full resize-none rounded-xl text-sm px-3 py-3 bg-white/8 border border-white/15 placeholder:text-slate-300/60 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-white/20 text-slate-100"
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
