@@ -22,6 +22,7 @@ interface ChatModalProps {
 const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClose }) => {
   const [question, setQuestion] = useState('');
   const [copied, setCopied] = useState(false);
+  const [theme, setTheme] = useState<'auto' | 'dark' | 'light'>('auto');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -52,6 +53,15 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
       .join('');
   }, [messages]);
 
+  const domain = useMemo(() => {
+    try {
+      if (!pageContext?.url) return '';
+      return new URL(pageContext.url).hostname.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  }, [pageContext?.url]);
+
   const handleCopy = useCallback(() => {
     if (!assistantText) return;
     navigator.clipboard
@@ -62,6 +72,44 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
       })
       .catch(() => {});
   }, [assistantText]);
+
+  const isDark = useMemo(() => {
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return true;
+  }, [theme]);
+
+  const cycleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'auto' ? 'dark' : prev === 'dark' ? 'light' : 'auto'));
+  }, []);
+
+  const containerBase = 'relative rounded-2xl backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.45)]';
+  const containerTheme = isDark
+    ? 'border border-white/15 bg-neutral-900/70 text-slate-100'
+    : 'border border-black/10 bg-white/85 text-slate-900';
+
+  const headerChipTheme = isDark
+    ? 'bg-white/10 border-white/10 text-slate-200/90'
+    : 'bg-slate-100 border-slate-200 text-slate-700';
+
+  const subtleCardTheme = isDark
+    ? 'bg-white/5 border-white/10'
+    : 'bg-slate-50 border-slate-200';
+
+  const aiBubbleTheme = isDark
+    ? 'bg-white/8 text-slate-100 border border-white/10'
+    : 'bg-slate-50 text-slate-800 border border-slate-200';
+
+  const copyBtnTheme = isDark
+    ? 'text-sky-300 hover:text-sky-200'
+    : 'text-sky-600 hover:text-sky-700';
+
+  const closeHoverTheme = isDark ? 'hover:bg-white/10' : 'hover:bg-black/5';
+
+  const hintTextTheme = isDark ? 'text-slate-300/70' : 'text-slate-500';
 
   // Focus the textarea on mount and when returning to ready state
   useEffect(() => {
@@ -132,19 +180,33 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
-      <div className="relative rounded-2xl border border-white/15 bg-neutral-500 backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] text-slate-100">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
+      <div className={`${containerBase} ${containerTheme}`}>
+        <div className={`flex items-center justify-between gap-3 px-4 py-3 ${isDark ? 'border-b border-white/10' : 'border-b border-black/10'}`}>
+          <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-semibold tracking-wide">Web‑K</span>
-            <span className="text-[10px] px-2 py-[2px] rounded-full bg-white/10 border border-white/10">Beta</span>
+            <span className={`text-[10px] px-2 py-[2px] rounded-full border ${headerChipTheme}`}>Beta</span>
+            {domain && (
+              <span className={`ml-2 truncate max-w-[160px] text-[11px] px-2 py-[2px] rounded-full border ${headerChipTheme}`}>
+                {domain}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={cycleTheme}
+              title={`Theme: ${theme}`}
+              className={`text-xs ${isDark ? 'text-slate-200 hover:text-white' : 'text-slate-700 hover:text-slate-900'}`}
+              aria-label="Toggle theme"
+              type="button"
+            >
+              {theme === 'auto' ? 'Auto' : theme === 'dark' ? 'Dark' : 'Light'}
+            </button>
             {assistantText && (
-              <button onClick={handleCopy} className="text-xs text-sky-300 hover:text-sky-200" aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
+              <button onClick={handleCopy} className={`text-xs ${copyBtnTheme}`} aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
             )}
             <button
               onClick={onClose}
-              className="w-7 h-7 grid place-items-center rounded-full hover:bg-white/10 text-slate-200"
+              className={`w-7 h-7 grid place-items-center rounded-full ${closeHoverTheme} ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
               aria-label="Close"
             >
               ×
@@ -154,8 +216,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
         <div className="px-4 py-3 max-h-[60vh] overflow-y-auto" ref={scrollContainerRef}>
           <div className="mb-3">
-            <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 max-h-40 overflow-y-auto">
-              <p className="text-xs whitespace-pre-wrap leading-relaxed text-slate-200/90">{selectedText}</p>
+            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-300/80">
+              <span className="tracking-wider uppercase">Selection</span>
+              <span>{selectedText.length} chars</span>
+            </div>
+            <div className={`p-3 rounded-xl max-h-40 overflow-y-auto ${subtleCardTheme}`}>
+              <p className={`text-xs whitespace-pre-wrap leading-relaxed ${isDark ? 'text-slate-200/90' : 'text-slate-700'}`}>{selectedText}</p>
             </div>
           </div>
 
@@ -173,17 +239,28 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           )}
 
           {messages.length > 0 && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              {messages.map((m) => (
-                <div key={m.id} className="mb-2 text-sm leading-relaxed">
-                  <span className="opacity-70 mr-1">{m.role === 'user' ? 'You:' : 'AI:'}</span>
-                  {m.parts.map((part, i) =>
-                    part.type === 'text' ? (
-                      <span key={`${m.id}-${i}`} className="text-slate-100 whitespace-pre-wrap">{part.text}</span>
-                    ) : null
-                  )}
-                </div>
-              ))}
+            <div className={`rounded-xl p-3 space-y-2 ${isDark ? 'border border-white/10 bg-white/5' : 'border border-slate-200 bg-slate-50'}`}>
+              {messages.map((m) => {
+                const isUser = m.role === 'user';
+                const text = m.parts
+                  .map((part) => (part.type === 'text' ? part.text : ''))
+                  .join('');
+                return (
+                  <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
+                        isUser
+                          ? isDark
+                            ? 'bg-gradient-to-r from-sky-600/70 to-indigo-600/70 text-white'
+                            : 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white'
+                          : aiBubbleTheme
+                      }`}
+                    >
+                      {text}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -199,22 +276,30 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             onKeyDown={onTextareaKeyDown}
             disabled={status !== 'ready'}
           />
-          <div className="mt-2 text-[11px] text-slate-300/70">
+          <div className={`mt-2 text-[11px] ${hintTextTheme}`}>
             Enter to send • Shift+Enter for newline • Esc to close
           </div>
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={handleAsk}
-              className="flex-1 py-2 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex-1 py-2 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               disabled={status !== 'ready' || !question.trim()}
               aria-label="Send message"
             >
-              {status === 'ready' ? 'Ask' : 'Streaming…'}
+              {status === 'ready' ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
+                    <path d="M5 12h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M12 5l7 7-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Ask
+                </>
+              ) : 'Streaming…'}
             </button>
             {(status === 'submitted' || status === 'streaming') && (
               <button
                 onClick={handleStop}
-                className="px-3 py-2 rounded-xl text-sm border border-white/15 bg-white/5 hover:bg-white/10"
+                className={`px-3 py-2 rounded-xl text-sm ${isDark ? 'border border-white/15 bg-white/5 hover:bg-white/10' : 'border border-slate-200 bg-slate-50 hover:bg-slate-100'}`}
                 type="button"
               >
                 Stop
