@@ -176,16 +176,58 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     setIsDarkPageBackground(L < 0.5);
   }, []);
 
+  const themeStyle = useMemo<React.CSSProperties>(() => {
+    if (isDarkPageBackground) {
+      return {
+        ['--wk-surface' as any]: 'rgba(15,23,42,0.92)',
+        ['--wk-text' as any]: '#e5e7eb',
+        ['--wk-muted' as any]: '#94a3b8',
+        ['--wk-border' as any]: '#334155',
+        ['--wk-ring' as any]: 'rgba(56,189,248,0.3)',
+        ['--wk-primaryFrom' as any]: '#0ea5e9',
+        ['--wk-primaryTo' as any]: '#6366f1',
+      } as React.CSSProperties;
+    }
+    return {
+      ['--wk-surface' as any]: '#ffffff',
+      ['--wk-text' as any]: '#0f172a',
+      ['--wk-muted' as any]: '#64748b',
+      ['--wk-border' as any]: '#e2e8f0',
+      ['--wk-ring' as any]: 'rgba(56,189,248,0.4)',
+      ['--wk-primaryFrom' as any]: '#0ea5e9',
+      ['--wk-primaryTo' as any]: '#6366f1',
+    } as React.CSSProperties;
+  }, [isDarkPageBackground]);
+
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans isolate">
-      <div className={`relative overflow-hidden rounded-2xl shadow-md border ${
+      <div
+        data-wk-theme={isDarkPageBackground ? 'dark' : 'light'}
+        style={themeStyle}
+        className={`relative overflow-hidden rounded-2xl shadow-md border ${
         isDarkPageBackground ? 'border-slate-700 text-slate-100 backdrop-blur-sm' : 'border-slate-300 bg-white text-slate-900'
-      }`}>
+      }`}
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{
+            backgroundImage: isDarkPageBackground
+              ? 'linear-gradient(135deg, rgba(56,189,248,0.25), rgba(99,102,241,0.25))'
+              : 'linear-gradient(135deg, rgba(148,163,184,0.35), rgba(203,213,225,0.35))',
+            WebkitMask:
+              'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+            WebkitMaskComposite: 'xor',
+            maskComposite: 'exclude',
+            padding: '1px',
+            boxSizing: 'border-box',
+          }}
+        />
         {isDarkPageBackground && (
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 rounded-2xl"
-            style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)' }}
+            style={{ backgroundColor: 'var(--wk-surface)' }}
           />
         )}
         <div className="relative z-10">
