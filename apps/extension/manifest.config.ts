@@ -33,7 +33,7 @@ export default defineManifest({
   web_accessible_resources: [
     {
       // src only needed for dev not prod
-      resources: ['vendor/*', 'src/*'],
+      resources: ['assets/*', 'vendor/*', 'src/*'],
       matches: ['<all_urls>'],
     },
   ],

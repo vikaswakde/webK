@@ -72,27 +72,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
       .catch(() => {});
   }, [assistantText]);
 
-  const containerBase = 'relative rounded-2xl shadow-md';
-  const containerTheme = 'border border-slate-300 bg-white text-slate-900';
-
-  const headerBorderTheme = 'border-slate-200';
-  const headerChipTheme = 'bg-slate-100 border-slate-200 text-slate-700';
-
-  const subtleCardTheme = 'bg-slate-50 border-slate-200';
-
-  const aiBubbleTheme = 'bg-slate-50 text-slate-800 border border-slate-200';
-
-  const messagesContainerTheme = 'rounded-xl p-3 space-y-2 border border-slate-200 bg-slate-50';
-
-  const copyBtnTheme = 'text-sky-600 hover:text-sky-700';
-
-  const closeHoverTheme = 'hover:bg-black/5';
-
-  const hintTextTheme = 'text-slate-500';
-  const streamingTextTheme = 'text-slate-500/80';
-  const textareaTheme = 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:ring-sky-400/40 focus:border-sky-300';
-  const secondaryBtnTheme = 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800';
-  const errorBoxTheme = 'bg-rose-50 text-rose-800 border border-rose-200';
+  
 
   // Focus the textarea on mount and when returning to ready state
   useEffect(() => {
@@ -161,26 +141,79 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     }
   }, []);
 
+  // Detect if the host page background is dark to conditionally harden button styles
+  const [isDarkPageBackground, setIsDarkPageBackground] = useState(false);
+  useEffect(() => {
+    const parseRgb = (value: string): { r: number; g: number; b: number; a: number } | null => {
+      const match = value.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/i);
+      if (!match) return null;
+      const r = Number(match[1]);
+      const g = Number(match[2]);
+      const b = Number(match[3]);
+      const a = match[4] !== undefined ? Number(match[4]) : 1;
+      return { r, g, b, a };
+    };
+
+    const getEffectiveBg = (): { r: number; g: number; b: number } => {
+      const candidates: (HTMLElement | null)[] = [document.body, document.documentElement];
+      for (const el of candidates) {
+        if (!el) continue;
+        const bg = getComputedStyle(el).backgroundColor || '';
+        const rgba = parseRgb(bg);
+        if (rgba && rgba.a > 0) {
+          return { r: rgba.r, g: rgba.g, b: rgba.b };
+        }
+      }
+      return { r: 255, g: 255, b: 255 };
+    };
+
+    const { r, g, b } = getEffectiveBg();
+    const toLinear = (c: number) => {
+      const x = c / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    };
+    const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    setIsDarkPageBackground(L < 0.5);
+  }, []);
+
   return (
-    <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
-      <div className={`${containerBase} ${containerTheme}`}>
-        <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b ${headerBorderTheme}`}>
+    <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans isolate">
+      <div className={`relative overflow-hidden rounded-2xl shadow-md border ${
+        isDarkPageBackground ? 'border-slate-700 text-slate-100 backdrop-blur-sm' : 'border-slate-300 bg-white text-slate-900'
+      }`}>
+        {isDarkPageBackground && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)' }}
+          />
+        )}
+        <div className="relative z-10">
+        <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b ${
+          isDarkPageBackground ? 'border-slate-700' : 'border-slate-200'
+        }`}>
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-semibold tracking-wide">Web‑K</span>
-            <span className={`text-[10px] px-2 py-[2px] rounded-full border ${headerChipTheme}`}>Beta</span>
+            <span className={`text-[10px] px-2 py-[2px] rounded-full border ${
+              isDarkPageBackground ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-700'
+            }`}>Beta</span>
             {domain && (
-              <span className={`ml-2 truncate max-w-[160px] text-[11px] px-2 py-[2px] rounded-full border ${headerChipTheme}`}>
+              <span className={`ml-2 truncate max-w-[160px] text-[11px] px-2 py-[2px] rounded-full border ${
+                isDarkPageBackground ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-100 border-slate-200 text-slate-700'
+              }`}>
                 {domain}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
             {assistantText && (
-              <button onClick={handleCopy} className={`text-xs ${copyBtnTheme}`} aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
+              <button onClick={handleCopy} className={`text-xs ${isDarkPageBackground ? 'text-sky-400 hover:text-sky-300' : 'text-sky-600 hover:text-sky-700'}`} aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
             )}
             <button
               onClick={onClose}
-              className={`w-7 h-7 grid place-items-center rounded-full ${closeHoverTheme} text-slate-700`}
+              className={`w-7 h-7 grid place-items-center rounded-full ${
+                isDarkPageBackground ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-black/5 text-slate-700'
+              }`}
               aria-label="Close"
             >
               ×
@@ -190,30 +223,36 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
         <div className="px-4 py-3 max-h-[60vh] overflow-y-auto" ref={scrollContainerRef}>
           <div className="mb-3">
-            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
+            <div className={`mb-1 flex items-center justify-between text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
               <span className="tracking-wider uppercase">Selection</span>
               <span>{selectedText.length} chars</span>
             </div>
-            <div className={`p-3 rounded-xl max-h-40 overflow-y-auto ${subtleCardTheme}`}>
-              <p className={`text-xs whitespace-pre-wrap leading-relaxed text-slate-700`}>{selectedText}</p>
+            <div className={`p-3 rounded-xl max-h-40 overflow-y-auto ${
+              isDarkPageBackground ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <p className={`text-xs whitespace-pre-wrap leading-relaxed ${isDarkPageBackground ? 'text-slate-200' : 'text-slate-700'}`}>{selectedText}</p>
             </div>
           </div>
 
           {(status === 'submitted' || status === 'streaming') && (
-            <div className={`flex items-center gap-2 text-xs ${streamingTextTheme} mb-2`}>
+            <div className={`flex items-center gap-2 text-xs ${isDarkPageBackground ? 'text-slate-400/80' : 'text-slate-500/80'} mb-2`}>
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               Streaming…
             </div>
           )}
 
           {(chatError) && (
-            <div className={`text-xs rounded-xl p-3 mb-2 ${errorBoxTheme}`}>
+            <div className={`text-xs rounded-xl p-3 mb-2 border ${
+              isDarkPageBackground ? 'bg-rose-950/40 text-rose-300 border-rose-900' : 'bg-rose-50 text-rose-800 border-rose-200'
+            }`}>
               {chatError?.message}
             </div>
           )}
 
           {messages.length > 0 && (
-            <div className={messagesContainerTheme}>
+            <div className={`rounded-xl p-3 space-y-2 border ${
+              isDarkPageBackground ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50'
+            }`}>
               {messages.map((m) => {
                 const isUser = m.role === 'user';
                 const text = m.parts
@@ -225,7 +264,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
                       className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
                         isUser
                           ? 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white'
-                          : aiBubbleTheme
+                          : isDarkPageBackground
+                            ? 'bg-slate-800 text-slate-100 border border-slate-700'
+                            : 'bg-slate-50 text-slate-800 border border-slate-200'
                       }`}
                     >
                       {text}
@@ -237,27 +278,43 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           )}
         </div>
 
-        <div className={`px-4 pb-4 pt-2 border-t ${headerBorderTheme}`}>
+        <div className={`px-4 pb-4 pt-2 border-t ${isDarkPageBackground ? 'border-slate-700' : 'border-slate-200'}`}>
           <textarea
             ref={textareaRef}
             rows={3}
             placeholder="Ask about the selection…"
-            className={`w-full resize-none rounded-xl text-sm px-3 py-3 border focus:outline-hidden focus:ring-2 ${textareaTheme}`}
+            className={`w-full resize-none rounded-xl text-sm px-3 py-3 border focus:outline-hidden focus:ring-2 ${
+              isDarkPageBackground
+                ? 'bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:ring-sky-400/30 focus:border-slate-600'
+                : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:ring-sky-400/40 focus:border-sky-300'
+            }`}
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
             disabled={status !== 'ready'}
           />
-          <div className={`mt-2 text-[11px] ${hintTextTheme}`}>
+          <div className={`mt-2 text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
             Enter to send • Shift+Enter for newline • Esc to close
           </div>
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={handleAsk}
-              className="flex-1 py-2 rounded-xl font-medium text-sm text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+              className="group relative overflow-hidden isolate flex-1 py-2 rounded-xl font-medium text-sm text-white disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 mix-blend-normal shadow-md ring-1 ring-sky-500/30 hover:ring-sky-500/40 appearance-none bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400"
               disabled={status !== 'ready' || !question.trim()}
               aria-label="Send message"
+              style={isDarkPageBackground ? undefined : {}}
             >
+              {isDarkPageBackground && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-xl transition-colors"
+                  style={{
+                    backgroundColor: 'rgb(2 132 199)',
+                    backgroundImage: 'linear-gradient(to right, rgb(14 165 233), rgb(99 102 241))',
+                  }}
+                />
+              )}
+              <span className="relative z-10 inline-flex items-center gap-2">
               {status === 'ready' ? (
                 <>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-90">
@@ -267,11 +324,14 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
                   Ask
                 </>
               ) : 'Streaming…'}
+              </span>
             </button>
             {(status === 'submitted' || status === 'streaming') && (
               <button
                 onClick={handleStop}
-                className={`px-3 py-2 rounded-xl text-sm ${secondaryBtnTheme}`}
+                className={`px-3 py-2 rounded-xl text-sm ${
+                  isDarkPageBackground ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
+                }`}
                 type="button"
               >
                 Stop
@@ -280,6 +340,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
