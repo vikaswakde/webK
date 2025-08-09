@@ -196,7 +196,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
   }, [isDarkPageBackground]);
 
   return (
-    <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans isolate">
+    <div className="fixed top-4 right-4 z-[2147483647] w-[420px] max-w-[92vw] font-sans isolate">
       <div
         data-wk-theme={isDarkPageBackground ? 'dark' : 'light'}
         style={themeStyle}
@@ -324,7 +324,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           <textarea
             ref={textareaRef}
             rows={3}
-            placeholder="Ask about the highlighted text on this page…"
+            placeholder="Start typing to your question......"
             className={`w-full resize-none rounded-xl text-sm px-3 py-3 border focus:outline-hidden focus:ring-2 ${
               isDarkPageBackground
                 ? 'bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:ring-sky-400/30 focus:border-slate-600'
@@ -335,9 +335,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             onKeyDown={onTextareaKeyDown}
             disabled={status !== 'ready'}
           />
-          <div className={`mt-2 text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
+          {/* <div className={`mt-2 text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
             Enter to send • Shift+Enter for newline • Esc to close
-          </div>
+          </div> */}
           <div className="mt-3 flex items-center gap-2">
             <button
               onClick={handleAsk}

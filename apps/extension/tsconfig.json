@@ -20,7 +20,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    "types": ["chrome"],
+    "types": ["chrome", "vite/client"],
 
     "baseUrl": ".",
     "paths": {

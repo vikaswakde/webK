@@ -1,16 +1,31 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM, { type Root } from 'react-dom/client';
 import ChatModal from './ChatModal';
-import './style.css';
+import modalStyles from './style.css?inline';
 
-console.log('content script loaded');
+console.log('[Web‑K] content script loaded');
+
+// Prevent duplicate listeners if the content script evaluates more than once
+if ((window as any).__WEBK_INSTALLED__) {
+  console.debug('[Web‑K] content already initialized');
+} else {
+  (window as any).__WEBK_INSTALLED__ = true;
+}
 
 const MODAL_ROOT_ID = 'web-k-modal-root';
 
+let shadowRootRef: ShadowRoot | null = null;
+let hostRef: HTMLDivElement | null = null;
+let modalContainerRef: HTMLDivElement | null = null;
+let reactRootRef: Root | null = null;
+
 const removeModal = () => {
-  const modalRoot = document.getElementById(MODAL_ROOT_ID);
-  if (modalRoot) {
-    modalRoot.remove();
+  if (reactRootRef) {
+    try { reactRootRef.unmount(); } catch {}
+    reactRootRef = null;
+  }
+  if (modalContainerRef) {
+    modalContainerRef.innerHTML = '';
   }
 };
 
@@ -91,33 +106,95 @@ function buildPageContext(selectedText: string): PageContext {
   return { title, url, lang, metaDescription, blockText, beforeText, afterText, selectionHtml };
 }
 
+function ensureShadowHost(): { shadow: ShadowRoot; modal: HTMLDivElement } {
+  if (shadowRootRef && modalContainerRef) {
+    return { shadow: shadowRootRef, modal: modalContainerRef };
+  }
+  // Host
+  hostRef = document.getElementById(MODAL_ROOT_ID) as HTMLDivElement | null;
+  if (!hostRef) {
+    hostRef = document.createElement('div');
+    hostRef.id = MODAL_ROOT_ID;
+    document.documentElement.appendChild(hostRef);
+  }
+  const shadow = (shadowRootRef ||= hostRef.attachShadow({ mode: 'open' }));
+
+  // Styles inside shadow
+  const resetEl = document.createElement('style');
+  resetEl.textContent = `:host{all:initial; contain: content}`;
+  shadow.appendChild(resetEl);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = modalStyles;
+  shadow.appendChild(styleEl);
+
+  // Containers
+  modalContainerRef = document.createElement('div');
+  modalContainerRef.id = 'webk-modal-container';
+  shadow.appendChild(modalContainerRef);
+
+  return { shadow, modal: modalContainerRef };
+}
+
 const openModal = (selectedText: string) => {
-  // Ensure no old modal is present
+  const { modal } = ensureShadowHost();
   removeModal();
 
-  const modalRoot = document.createElement('div');
-  modalRoot.id = MODAL_ROOT_ID;
-  document.body.appendChild(modalRoot);
-
-  const root = ReactDOM.createRoot(modalRoot);
+  reactRootRef = ReactDOM.createRoot(modal);
   const pageContext = buildPageContext(selectedText);
-  root.render(
+  reactRootRef.render(
     <React.StrictMode>
       <ChatModal selectedText={selectedText} pageContext={pageContext} onClose={removeModal} />
     </React.StrictMode>
   );
+  console.debug('[Web‑K] modal rendered');
 };
 
-document.addEventListener('keydown', (event) => {
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  const modifierKey = isMac ? event.metaKey : event.ctrlKey;
+// Helper retained for potential future use; currently unused.
+// function getSelectedText(): string {
+//   return window.getSelection()?.toString() ?? '';
+// }
 
-  if (modifierKey && event.shiftKey && event.key === 'K') {
+const keyHandler = (event: KeyboardEvent) => {
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+  const modifierKey = isMac ? event.metaKey : event.ctrlKey;
+  const isKeyK = event.code === 'KeyK' || event.key.toLowerCase() === 'k';
+
+  const acceptsPrimaryCombo = modifierKey && event.shiftKey && isKeyK; // Cmd/Ctrl+Shift+K
+  const acceptsAltCombo = event.altKey && isKeyK; // Alt+K fallback (avoids some browser-reserved shortcuts)
+
+  if (acceptsPrimaryCombo || acceptsAltCombo) {
     const selectedText = window.getSelection()?.toString().trim();
-    if (selectedText) {
-      openModal(selectedText);
+    if (!selectedText) {
+      console.debug('[Web‑K] hotkey pressed but no selection');
+      return;
+    }
+    // Try to prevent browser/website handlers from hijacking
+    event.preventDefault();
+    event.stopPropagation();
+    console.debug('[Web‑K] hotkey detected');
+    if (window !== window.top) {
+      // Relay to top frame so the modal appears relative to the full page
+      window.top?.postMessage({ __webk: true, type: 'OPEN', selectedText }, '*');
     } else {
-      console.log('No text selected.');
+      openModal(selectedText);
     }
   }
-});
+};
+
+// Capture early to beat site handlers; also listen on window
+window.addEventListener('keydown', keyHandler, { capture: true });
+document.addEventListener('keydown', keyHandler, { capture: true });
+
+// Listen only in the top frame for open requests from child frames
+const messageHandler = (event: MessageEvent) => {
+  const data = (event && (event as MessageEvent).data) as any;
+  if (!data || data.__webk !== true || data.type !== 'OPEN') return;
+  if (window !== window.top) return;
+  const selectedText = typeof data.selectedText === 'string' ? data.selectedText.trim() : '';
+  if (!selectedText) return;
+  console.debug('[Web‑K] message received from frame → opening modal');
+  openModal(selectedText);
+};
+window.addEventListener('message', messageHandler, true);
+
+// No selection bubble — hotkey only

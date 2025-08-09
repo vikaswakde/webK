@@ -15,6 +15,9 @@ export default defineManifest({
     {
       matches: ['<all_urls>'],
       js: ['src/content.tsx'],
+      all_frames: true,
+      match_about_blank: true,
+      run_at: 'document_end',
     },
   ],
   action: {
