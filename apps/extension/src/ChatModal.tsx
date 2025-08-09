@@ -72,22 +72,27 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
       .catch(() => {});
   }, [assistantText]);
 
-  // Light theme only
+  const containerBase = 'relative rounded-2xl shadow-md';
+  const containerTheme = 'border border-slate-300 bg-white text-slate-900';
 
-  const containerBase = 'relative rounded-2xl backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.45)]';
-  const containerTheme = 'border border-black/10 bg-white/85 text-slate-900';
-
+  const headerBorderTheme = 'border-slate-200';
   const headerChipTheme = 'bg-slate-100 border-slate-200 text-slate-700';
 
   const subtleCardTheme = 'bg-slate-50 border-slate-200';
 
   const aiBubbleTheme = 'bg-slate-50 text-slate-800 border border-slate-200';
 
+  const messagesContainerTheme = 'rounded-xl p-3 space-y-2 border border-slate-200 bg-slate-50';
+
   const copyBtnTheme = 'text-sky-600 hover:text-sky-700';
 
   const closeHoverTheme = 'hover:bg-black/5';
 
   const hintTextTheme = 'text-slate-500';
+  const streamingTextTheme = 'text-slate-500/80';
+  const textareaTheme = 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:ring-sky-400/40 focus:border-sky-300';
+  const secondaryBtnTheme = 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800';
+  const errorBoxTheme = 'bg-rose-50 text-rose-800 border border-rose-200';
 
   // Focus the textarea on mount and when returning to ready state
   useEffect(() => {
@@ -159,7 +164,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
       <div className={`${containerBase} ${containerTheme}`}>
-        <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b border-black/10`}>
+        <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b ${headerBorderTheme}`}>
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-semibold tracking-wide">Web‑K</span>
             <span className={`text-[10px] px-2 py-[2px] rounded-full border ${headerChipTheme}`}>Beta</span>
@@ -195,20 +200,20 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           </div>
 
           {(status === 'submitted' || status === 'streaming') && (
-            <div className="flex items-center gap-2 text-xs text-slate-300/80 mb-2">
+            <div className={`flex items-center gap-2 text-xs ${streamingTextTheme} mb-2`}>
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               Streaming…
             </div>
           )}
 
           {(chatError) && (
-            <div className="text-xs bg-rose-500/15 text-rose-200 border border-rose-500/30 rounded-xl p-3 mb-2">
+            <div className={`text-xs rounded-xl p-3 mb-2 ${errorBoxTheme}`}>
               {chatError?.message}
             </div>
           )}
 
           {messages.length > 0 && (
-            <div className={`rounded-xl p-3 space-y-2 border border-slate-200 bg-slate-50`}>
+            <div className={messagesContainerTheme}>
               {messages.map((m) => {
                 const isUser = m.role === 'user';
                 const text = m.parts
@@ -232,12 +237,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           )}
         </div>
 
-        <div className="px-4 pb-4 pt-2 border-t border-black/10">
+        <div className={`px-4 pb-4 pt-2 border-t ${headerBorderTheme}`}>
           <textarea
             ref={textareaRef}
             rows={3}
             placeholder="Ask about the selection…"
-            className="w-full resize-none rounded-xl text-sm px-3 py-3 bg-white border border-slate-300 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-sky-300 text-slate-900"
+            className={`w-full resize-none rounded-xl text-sm px-3 py-3 border focus:outline-hidden focus:ring-2 ${textareaTheme}`}
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
@@ -266,7 +271,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             {(status === 'submitted' || status === 'streaming') && (
               <button
                 onClick={handleStop}
-                className={`px-3 py-2 rounded-xl text-sm border border-slate-200 bg-slate-50 hover:bg-slate-100`}
+                className={`px-3 py-2 rounded-xl text-sm ${secondaryBtnTheme}`}
                 type="button"
               >
                 Stop
