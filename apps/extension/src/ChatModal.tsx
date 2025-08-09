@@ -22,7 +22,6 @@ interface ChatModalProps {
 const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClose }) => {
   const [question, setQuestion] = useState('');
   const [copied, setCopied] = useState(false);
-  const [theme, setTheme] = useState<'auto' | 'dark' | 'light'>('auto');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -73,43 +72,22 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
       .catch(() => {});
   }, [assistantText]);
 
-  const isDark = useMemo(() => {
-    if (theme === 'dark') return true;
-    if (theme === 'light') return false;
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return true;
-  }, [theme]);
-
-  const cycleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'auto' ? 'dark' : prev === 'dark' ? 'light' : 'auto'));
-  }, []);
+  // Light theme only
 
   const containerBase = 'relative rounded-2xl backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.45)]';
-  const containerTheme = isDark
-    ? 'border border-white/15 bg-neutral-900/70 text-slate-100'
-    : 'border border-black/10 bg-white/85 text-slate-900';
+  const containerTheme = 'border border-black/10 bg-white/85 text-slate-900';
 
-  const headerChipTheme = isDark
-    ? 'bg-white/10 border-white/10 text-slate-200/90'
-    : 'bg-slate-100 border-slate-200 text-slate-700';
+  const headerChipTheme = 'bg-slate-100 border-slate-200 text-slate-700';
 
-  const subtleCardTheme = isDark
-    ? 'bg-white/5 border-white/10'
-    : 'bg-slate-50 border-slate-200';
+  const subtleCardTheme = 'bg-slate-50 border-slate-200';
 
-  const aiBubbleTheme = isDark
-    ? 'bg-white/8 text-slate-100 border border-white/10'
-    : 'bg-slate-50 text-slate-800 border border-slate-200';
+  const aiBubbleTheme = 'bg-slate-50 text-slate-800 border border-slate-200';
 
-  const copyBtnTheme = isDark
-    ? 'text-sky-300 hover:text-sky-200'
-    : 'text-sky-600 hover:text-sky-700';
+  const copyBtnTheme = 'text-sky-600 hover:text-sky-700';
 
-  const closeHoverTheme = isDark ? 'hover:bg-white/10' : 'hover:bg-black/5';
+  const closeHoverTheme = 'hover:bg-black/5';
 
-  const hintTextTheme = isDark ? 'text-slate-300/70' : 'text-slate-500';
+  const hintTextTheme = 'text-slate-500';
 
   // Focus the textarea on mount and when returning to ready state
   useEffect(() => {
@@ -181,7 +159,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
   return (
     <div className="fixed top-4 right-4 z-2147483647 w-[420px] max-w-[92vw] font-sans">
       <div className={`${containerBase} ${containerTheme}`}>
-        <div className={`flex items-center justify-between gap-3 px-4 py-3 ${isDark ? 'border-b border-white/10' : 'border-b border-black/10'}`}>
+        <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b border-black/10`}>
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-semibold tracking-wide">Web‑K</span>
             <span className={`text-[10px] px-2 py-[2px] rounded-full border ${headerChipTheme}`}>Beta</span>
@@ -192,21 +170,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             )}
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={cycleTheme}
-              title={`Theme: ${theme}`}
-              className={`text-xs ${isDark ? 'text-slate-200 hover:text-white' : 'text-slate-700 hover:text-slate-900'}`}
-              aria-label="Toggle theme"
-              type="button"
-            >
-              {theme === 'auto' ? 'Auto' : theme === 'dark' ? 'Dark' : 'Light'}
-            </button>
             {assistantText && (
               <button onClick={handleCopy} className={`text-xs ${copyBtnTheme}`} aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
             )}
             <button
               onClick={onClose}
-              className={`w-7 h-7 grid place-items-center rounded-full ${closeHoverTheme} ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+              className={`w-7 h-7 grid place-items-center rounded-full ${closeHoverTheme} text-slate-700`}
               aria-label="Close"
             >
               ×
@@ -216,12 +185,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
         <div className="px-4 py-3 max-h-[60vh] overflow-y-auto" ref={scrollContainerRef}>
           <div className="mb-3">
-            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-300/80">
+            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
               <span className="tracking-wider uppercase">Selection</span>
               <span>{selectedText.length} chars</span>
             </div>
             <div className={`p-3 rounded-xl max-h-40 overflow-y-auto ${subtleCardTheme}`}>
-              <p className={`text-xs whitespace-pre-wrap leading-relaxed ${isDark ? 'text-slate-200/90' : 'text-slate-700'}`}>{selectedText}</p>
+              <p className={`text-xs whitespace-pre-wrap leading-relaxed text-slate-700`}>{selectedText}</p>
             </div>
           </div>
 
@@ -239,7 +208,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           )}
 
           {messages.length > 0 && (
-            <div className={`rounded-xl p-3 space-y-2 ${isDark ? 'border border-white/10 bg-white/5' : 'border border-slate-200 bg-slate-50'}`}>
+            <div className={`rounded-xl p-3 space-y-2 border border-slate-200 bg-slate-50`}>
               {messages.map((m) => {
                 const isUser = m.role === 'user';
                 const text = m.parts
@@ -250,9 +219,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
                     <div
                       className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
                         isUser
-                          ? isDark
-                            ? 'bg-gradient-to-r from-sky-600/70 to-indigo-600/70 text-white'
-                            : 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white'
+                          ? 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white'
                           : aiBubbleTheme
                       }`}
                     >
@@ -265,12 +232,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           )}
         </div>
 
-        <div className="px-4 pb-4 pt-2 border-t border-white/10">
+        <div className="px-4 pb-4 pt-2 border-t border-black/10">
           <textarea
             ref={textareaRef}
             rows={3}
             placeholder="Ask about the selection…"
-            className="w-full resize-none rounded-xl text-sm px-3 py-3 bg-white/8 border border-white/15 placeholder:text-slate-300/60 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-white/20 text-slate-100"
+            className="w-full resize-none rounded-xl text-sm px-3 py-3 bg-white border border-slate-300 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-400/40 focus:border-sky-300 text-slate-900"
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
@@ -299,7 +266,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             {(status === 'submitted' || status === 'streaming') && (
               <button
                 onClick={handleStop}
-                className={`px-3 py-2 rounded-xl text-sm ${isDark ? 'border border-white/15 bg-white/5 hover:bg-white/10' : 'border border-slate-200 bg-slate-50 hover:bg-slate-100'}`}
+                className={`px-3 py-2 rounded-xl text-sm border border-slate-200 bg-slate-50 hover:bg-slate-100`}
                 type="button"
               >
                 Stop
