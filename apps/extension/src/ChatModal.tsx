@@ -72,18 +72,14 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
       .catch(() => {});
   }, [assistantText]);
 
-  
+  const selectionPreview = useMemo(() => {
+    if (!selectedText) return '';
+    const normalized = selectedText.replace(/\s+/g, ' ').trim();
+    const limit = 160;
+    return normalized.length > limit ? normalized.slice(0, limit).trimEnd() + '…' : normalized;
+  }, [selectedText]);
 
-  // Focus the textarea on mount and when returning to ready state
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (status === 'ready') {
-      textareaRef.current?.focus();
-    }
-  }, [status]);
+  // Do not auto-focus on mount/status to preserve page selection highlight.
 
   // Close on Escape
   useEffect(() => {
@@ -264,17 +260,21 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
         </div>
 
         <div className="px-4 py-3 max-h-[60vh] overflow-y-auto" ref={scrollContainerRef}>
-          <div className="mb-3">
-            <div className={`mb-1 flex items-center justify-between text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
-              <span className="tracking-wider uppercase">Selection</span>
-              <span>{selectedText.length} chars</span>
+          {selectionPreview && (
+            <div className="mb-3">
+              <div className={`px-3 py-2 rounded-xl border ${
+                isDarkPageBackground ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className={`mb-1 flex items-center justify-between text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className="tracking-wider uppercase">Selection</span>
+                  <span>{selectedText.length} chars</span>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDarkPageBackground ? 'text-slate-300' : 'text-slate-600'} whitespace-nowrap overflow-hidden text-ellipsis`}>
+                  {selectionPreview}
+                </p>
+              </div>
             </div>
-            <div className={`p-3 rounded-xl max-h-40 overflow-y-auto ${
-              isDarkPageBackground ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'
-            }`}>
-              <p className={`text-xs whitespace-pre-wrap leading-relaxed ${isDarkPageBackground ? 'text-slate-200' : 'text-slate-700'}`}>{selectedText}</p>
-            </div>
-          </div>
+          )}
 
           {(status === 'submitted' || status === 'streaming') && (
             <div className={`flex items-center gap-2 text-xs ${isDarkPageBackground ? 'text-slate-400/80' : 'text-slate-500/80'} mb-2`}>
@@ -324,7 +324,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           <textarea
             ref={textareaRef}
             rows={3}
-            placeholder="Ask about the selection…"
+            placeholder="Ask about the highlighted text on this page…"
             className={`w-full resize-none rounded-xl text-sm px-3 py-3 border focus:outline-hidden focus:ring-2 ${
               isDarkPageBackground
                 ? 'bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:ring-sky-400/30 focus:border-slate-600'
