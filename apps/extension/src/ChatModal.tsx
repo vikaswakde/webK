@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { API_URL } from './config';
 
 interface PageContext {
   title: string;
@@ -27,7 +28,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
   const { messages, sendMessage, status, stop, error: chatError } = useChat({
     transport: new DefaultChatTransport({
-      api: 'http://localhost:3001/api/ask',
+      api: API_URL,
       // Attach selected text on every request
       body: () => ({ selectedText, pageContext }),
     }),

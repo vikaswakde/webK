@@ -7,6 +7,7 @@ export default defineManifest({
   version: pkg.version,
   description: "Select text and ask AI.",
   permissions: ['storage', 'activeTab', 'scripting'],
+  host_permissions: ['https://web-k-backend.vercel.app/*'],
   background: {
     service_worker: 'src/background.ts',
     type: 'module',
