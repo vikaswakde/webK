@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web-K Backend
+
+This is a [Next.js](https://nextjs.org) application that serves as the backend for the Web-K browser extension. It provides a single API endpoint that uses the [Vercel AI SDK](https://sdk.vercel.ai/) to stream responses from Google's Gemini large language model.
+
+## Features
+
+- **AI-Powered API**: A single endpoint (`/api/ask`) that takes webpage context and a user question.
+- **Streaming Responses**: Streams responses back to the client for a real-time chat experience.
+- **Input Validation**: Uses [Zod](https://zod.dev/) to validate all incoming requests for security and stability.
+
+## Technology Stack
+
+- [Next.js](https://nextjs.org/) (App Router)
+- [Vercel AI SDK](https://sdk.vercel.ai/)
+- [Google Gemini](https://ai.google.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Zod](https://zod.dev/)
+
+## API Endpoint
+
+### `POST /api/ask`
+
+This endpoint accepts a JSON body with the context of a webpage and a series of messages, then streams a response from the AI.
+
+**Request Body Schema:**
+
+```json
+{
+  "messages": "Array<UIMessage>",
+  "selectedText": "string",
+  "pageContext": {
+    "title": "string",
+    "url": "string",
+    "lang": "string",
+    "metaDescription": "string",
+    "blockText": "string",
+    "beforeText": "string",
+    "afterText": "string",
+    "selectionHtml": "string"
+  }
+}
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- [Node.js](https://nodejs.org/en/) (v18 or later)
+- [pnpm](https://pnpm.io/)
+- A Google AI API key (for Gemini)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  **Clone the repository.**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2.  **Install dependencies** from the root of the monorepo:
+    ```bash
+    pnpm install
+    ```
 
-## Learn More
+3.  **Create a `.env.local` file** in the `apps/backend` directory and add your Google API key:
+    ```
+    GOOGLE_API_KEY="your-api-key-here"
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+4.  **Run the development server:**
+    ```bash
+    pnpm dev
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The backend server will be running on [http://localhost:3000](http://localhost:3000).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
