@@ -157,20 +157,17 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
 
   return (
-    <div className={`fixed top-4 right-4 z-[2147483647] w-[422px] max-w-[92vw] font-sans isolate ${theme}`}>
+    <div className={`fixed top-4 right-4 z-[2147483647] w-[22%] max-w-[92vw] font-sans isolate ${theme}`}>
       <Card
         className="relative overflow-hidden rounded-2xl shadow-md border"
       >
         
         <div className="relative z-10">
-        <CardHeader className="flex-row items-center justify-between gap-3 p-4 border-b">
+        <CardHeader className="flex items-center justify-between gap-3 px-4 border-b">
           <div className="flex items-center gap-2 min-w-0">
-            <CardTitle className="text-sm font-semibold tracking-wide">Web‑K</CardTitle>
-            <Badge variant="secondary" className="text-[10px] px-2 py-[2px]">
-              Beta
-            </Badge>
+            <CardTitle className="text-sm font-semibold tracking-wide">WebK</CardTitle>
             {domain && (
-              <Badge variant="outline" className="ml-1 truncate max-w-[160px] text-[10px] px-2 py-[2px]">
+              <Badge variant="outline" className="ml-1 truncate max-w-[160px] text-[10px] px-2 py-[2px] text-gray-300 ">
                 {domain}
               </Badge>
             )}
@@ -255,7 +252,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
           )}
         </CardContent>
 
-        <CardFooter className="flex-col items-stretch p-4 pt-3 space-y-3 border-t">
+        <CardFooter className="flex-col items-stretch px-4 pt-3 space-y-3 border-t">
           <Textarea
             ref={textareaRef}
             rows={3}

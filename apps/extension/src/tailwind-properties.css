@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@import "tw-animate-css";
+
+/* This file will be processed to extract only @property declarations */

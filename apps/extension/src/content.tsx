@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM, { type Root } from 'react-dom/client';
 import ChatModal from './ChatModal';
 import modalStyles from './style.css?inline';
+import propertiesStyles from './tailwind-properties.css?inline';
 
 console.log('[Web‑K] content script loaded');
 
@@ -13,11 +14,24 @@ if ((window as any).__WEBK_INSTALLED__) {
 }
 
 const MODAL_ROOT_ID = 'web-k-modal-root';
+const PROPERTIES_STYLE_ID = 'web-k-properties';
 
 let shadowRootRef: ShadowRoot | null = null;
 let hostRef: HTMLDivElement | null = null;
 let modalContainerRef: HTMLDivElement | null = null;
 let reactRootRef: Root | null = null;
+
+// Inject Tailwind @property declarations into the main document (outside shadow root)
+// This works around the limitation that @property isn't supported in shadow roots
+const injectPropertiesStyles = () => {
+  if (document.getElementById(PROPERTIES_STYLE_ID)) return; // Already injected
+  
+  const styleEl = document.createElement('style');
+  styleEl.id = PROPERTIES_STYLE_ID;
+  styleEl.textContent = propertiesStyles;
+  document.head.appendChild(styleEl);
+  console.debug('[Web‑K] Injected Tailwind @property declarations into main document');
+};
 
 const removeModal = () => {
   if (reactRootRef) {
@@ -110,6 +124,10 @@ function ensureShadowHost(): { shadow: ShadowRoot; modal: HTMLDivElement } {
   if (shadowRootRef && modalContainerRef) {
     return { shadow: shadowRootRef, modal: modalContainerRef };
   }
+  
+  // Inject @property declarations into main document first
+  injectPropertiesStyles();
+  
   // Host
   hostRef = document.getElementById(MODAL_ROOT_ID) as HTMLDivElement | null;
   if (!hostRef) {
