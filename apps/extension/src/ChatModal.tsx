@@ -159,7 +159,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
 
   return (
-    <div className={`fixed top-4 right-4 z-[2147483647] w-[22%] max-w-[92vw] font-sans isolate ${theme}`}>
+    <div className={`fixed top-4 right-4 z-[2147483647] w-[25%] max-w-[92vw] font-sans isolate ${theme}`}>
       <Card
         className="relative overflow-hidden rounded-2xl shadow-md border"
       >
