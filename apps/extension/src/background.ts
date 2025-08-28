@@ -2,7 +2,13 @@ console.log('background script loaded');
 
 import { API_URL } from './config';
 
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // IMPORTANT: Validate the sender to ensure messages only come from your extension.
+  if (sender.id !== chrome.runtime.id) {
+    console.warn('Received message from untrusted sender:', sender);
+    return false; // Do not process the message.
+  }
+
   if (request.type === 'ASK_AI') {
     console.log('Received message, forwarding to backend...');
 

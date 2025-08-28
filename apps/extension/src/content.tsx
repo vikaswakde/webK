@@ -3,6 +3,7 @@ import ReactDOM, { type Root } from 'react-dom/client';
 import ChatModal from './ChatModal';
 import modalStyles from './style.css?inline';
 import propertiesStyles from './tailwind-properties.css?inline';
+import DOMPurify from 'dompurify';
 
 console.log('[Web‑K] content script loaded');
 
@@ -55,22 +56,9 @@ type PageContext = {
 };
 
 function sanitizeHtml(html: string): string {
-  // Basic sanitization: strip script/style and inline event handlers
-  try {
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    container.querySelectorAll('script, style').forEach((el) => el.remove());
-    container.querySelectorAll('*').forEach((el) => {
-      for (const attr of Array.from(el.attributes)) {
-        if (/^on/i.test(attr.name)) {
-          el.removeAttribute(attr.name);
-        }
-      }
-    });
-    return container.innerHTML;
-  } catch {
-    return '';
-  }
+  // Use DOMPurify to prevent XSS.
+  // It is configured to be safe by default.
+  return DOMPurify.sanitize(html);
 }
 
 function buildPageContext(selectedText: string): PageContext {
