@@ -1,33 +1,39 @@
 import { NextResponse } from 'next/server';
 import { google } from '@ai-sdk/google';
-import { streamText, convertToModelMessages, UIMessage } from 'ai';
+import { streamText, convertToModelMessages } from 'ai';
+import { z } from 'zod';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
-type PageContext = {
-  title?: string;
-  url?: string;
-  lang?: string;
-  metaDescription?: string;
-  blockText?: string;
-  beforeText?: string;
-  afterText?: string;
-  selectionHtml?: string;
-};
+const PageContextSchema = z.object({
+  title: z.string().optional(),
+  url: z.url().optional(),
+  lang: z.string().optional(),
+  metaDescription: z.string().optional(),
+  blockText: z.string().optional(),
+  beforeText: z.string().optional(),
+  afterText: z.string().optional(),
+  selectionHtml: z.string().optional(),
+});
+
+const RequestSchema = z.object({
+  //TODO: add definite schema later
+  messages: z.array(z.any()).min(1), // Basic check for an array of messages
+  selectedText: z.string().optional(),
+  pageContext: PageContextSchema.optional(),
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { messages, selectedText, pageContext } = body as {
-      messages?: UIMessage[];
-      selectedText?: string;
-      pageContext?: PageContext;
-    };
+    const validation = RequestSchema.safeParse(body);
 
-    if (!Array.isArray(messages)) {
-      return NextResponse.json({ error: 'Missing messages' }, { status: 400 });
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Invalid request body', details: validation.error.flatten() }, { status: 400 });
     }
+
+    const { messages, selectedText, pageContext } = validation.data;
 
     const selection = (selectedText ?? '').slice(0, 4000);
     const block = (pageContext?.blockText ?? '').slice(0, 2000);
@@ -41,7 +47,7 @@ export async function POST(request: Request) {
 
     const systemPrompt = `You are a concise and helpful assistant for explaining or answering questions about selected web content.
 
-Use the following prioritized context. Prefer the Selection. If insufficient, use Block, then Before/After. If still unclear, ask a brief clarifying question instead of guessing.
+  Use the following prioritized context. Prefer the Selection. If insufficient, use Block, then Before/After. If still unclear, ask a brief clarifying question instead of guessing.
 
 [Page]
 Title: ${title}
@@ -58,10 +64,10 @@ ${selectionHtml}
 [Block]
 ${block}
 
-[Before]
+[Before Block]
 ${before}
 
-[After]
+[After Block]
 ${after}`;
 
     const result = streamText({
