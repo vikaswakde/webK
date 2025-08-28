@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Send, X, Copy, AlertCircle, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface PageContext {
   title: string;
@@ -243,7 +245,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
                           : 'bg-background border shadow-sm'
                       }`}
                     >
-                      {text}
+                      {isUser ? text : <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>}
                     </div>
                   </div>
                 );
