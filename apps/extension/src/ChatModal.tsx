@@ -128,9 +128,11 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     
     // When a new question is submitted, position it at top of viewport
     if (status === 'submitted' && !hasScrolledToNewMessage.current) {
-      // Simple approach: scroll to bottom so new question is visible
-      // This positions new question optimally with previous messages above
-      el.scrollTop = el.scrollHeight - el.clientHeight;
+      // Position newest message at top by scrolling back from bottom
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      const viewportHeight = el.clientHeight;
+      const padding = 60; // Leave some padding at top
+      el.scrollTop = Math.max(0, maxScroll - viewportHeight + padding);
       hasScrolledToNewMessage.current = true;
       return;
     }
