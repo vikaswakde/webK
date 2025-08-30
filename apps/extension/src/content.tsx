@@ -169,11 +169,7 @@ const keyHandler = (event: KeyboardEvent) => {
   const acceptsAltCombo = event.altKey && isKeyK; // Alt+K fallback (avoids some browser-reserved shortcuts)
 
   if (acceptsPrimaryCombo || acceptsAltCombo) {
-    const selectedText = window.getSelection()?.toString().trim();
-    if (!selectedText) {
-      console.debug('[Web‑K] hotkey pressed but no selection');
-      return;
-    }
+    const selectedText = window.getSelection()?.toString().trim() ?? '';
     // Try to prevent browser/website handlers from hijacking
     event.preventDefault();
     event.stopPropagation();
@@ -197,7 +193,6 @@ const messageHandler = (event: MessageEvent) => {
   if (!data || data.__webk !== true || data.type !== 'OPEN') return;
   if (window !== window.top) return;
   const selectedText = typeof data.selectedText === 'string' ? data.selectedText.trim() : '';
-  if (!selectedText) return;
   console.debug('[Web‑K] message received from frame → opening modal');
   openModal(selectedText);
 };
