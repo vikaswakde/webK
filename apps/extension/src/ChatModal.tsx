@@ -34,7 +34,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const hasScrolledToNewMessage = useRef(false);
 
   const { messages, sendMessage, status, stop, error: chatError } = useChat({
     transport: new DefaultChatTransport({
@@ -121,39 +120,15 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     return () => window.removeEventListener('keydown', onAnyKey);
   }, []);
 
-  // Smart scroll behavior: scroll to new questions, then lock position during generation
+  // Auto-scroll messages to bottom on update
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    
-    // When a new question is submitted, position it at top of viewport
-    if (status === 'submitted' && !hasScrolledToNewMessage.current) {
-      // Position newest message at top by scrolling back from bottom
-      const maxScroll = el.scrollHeight - el.clientHeight;
-      const viewportHeight = el.clientHeight;
-      const padding = 60; // Leave some padding at top
-      el.scrollTop = Math.max(0, maxScroll - viewportHeight + padding);
-      hasScrolledToNewMessage.current = true;
-      return;
-    }
-    
-    // When streaming starts, we've already scrolled to the new message
-    // Stay locked at current position - don't auto-scroll during generation
-    if (status === 'streaming') {
-      return;
-    }
-    
-    // When conversation completes, reset flag for next conversation
-    if (status === 'ready') {
-      hasScrolledToNewMessage.current = false;
-    }
+    el.scrollTop = el.scrollHeight;
   }, [messages, status]);
 
   const onTextareaKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key !== 'Escape') {
-        e.stopPropagation();
-      }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (status === 'ready' && question.trim()) handleAsk();
@@ -161,12 +136,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     },
     [handleAsk, question, status]
   );
-
-  const onTextareaKeyUp = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== 'Escape') {
-      e.stopPropagation();
-    }
-  }, []);
 
   const onTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setQuestion(e.target.value);
@@ -294,7 +263,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
-            onKeyUp={onTextareaKeyUp}
             disabled={status !== 'ready'}
           />
           {/* <div className={`mt-2 text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
