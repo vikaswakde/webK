@@ -140,6 +140,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     [handleAsk, question, status]
   );
 
+  const onTextareaKeyUp = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Escape') {
+      e.stopPropagation();
+    }
+  }, []);
+
   const onTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setQuestion(e.target.value);
     // Auto-grow textarea height
@@ -266,6 +272,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
+            onKeyUp={onTextareaKeyUp}
             disabled={status !== 'ready'}
           />
           {/* <div className={`mt-2 text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
