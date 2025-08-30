@@ -129,6 +129,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
   const onTextareaKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key !== 'Escape') {
+        e.stopPropagation();
+      }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (status === 'ready' && question.trim()) handleAsk();
