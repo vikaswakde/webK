@@ -129,6 +129,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
 
   const onTextareaKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key !== 'Escape') {
+        e.stopPropagation();
+      }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (status === 'ready' && question.trim()) handleAsk();
@@ -136,6 +139,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     },
     [handleAsk, question, status]
   );
+
+  const onTextareaKeyUp = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Escape') {
+      e.stopPropagation();
+    }
+  }, []);
 
   const onTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setQuestion(e.target.value);
@@ -263,6 +272,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
             value={question}
             onChange={onTextareaChange}
             onKeyDown={onTextareaKeyDown}
+            onKeyUp={onTextareaKeyUp}
             disabled={status !== 'ready'}
           />
           {/* <div className={`mt-2 text-[11px] ${isDarkPageBackground ? 'text-slate-400' : 'text-slate-500'}`}>
