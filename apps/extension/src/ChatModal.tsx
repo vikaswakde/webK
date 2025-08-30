@@ -34,6 +34,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasScrolledToNewMessage = useRef(false);
 
   const { messages, sendMessage, status, stop, error: chatError } = useChat({
     transport: new DefaultChatTransport({
@@ -120,11 +121,28 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     return () => window.removeEventListener('keydown', onAnyKey);
   }, []);
 
-  // Auto-scroll messages to bottom on update
+  // Smart scroll behavior: scroll to new questions, then lock position during generation
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    
+    // When a new question is submitted, scroll to show it and reset the flag
+    if (status === 'submitted' && !hasScrolledToNewMessage.current) {
+      el.scrollTop = el.scrollHeight;
+      hasScrolledToNewMessage.current = true;
+      return;
+    }
+    
+    // When streaming starts, we've already scrolled to the new message
+    // Stay locked at current position - don't auto-scroll during generation
+    if (status === 'streaming') {
+      return;
+    }
+    
+    // When conversation completes, reset flag for next conversation
+    if (status === 'ready') {
+      hasScrolledToNewMessage.current = false;
+    }
   }, [messages, status]);
 
   const onTextareaKeyDown = useCallback(
