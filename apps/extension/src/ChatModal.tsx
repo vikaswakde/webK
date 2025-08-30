@@ -128,9 +128,10 @@ const ChatModal: React.FC<ChatModalProps> = ({ selectedText, pageContext, onClos
     
     // When a new question is submitted, position it near the top of viewport
     if (status === 'submitted' && !hasScrolledToNewMessage.current) {
-      // Position content so there's room at bottom to see AI response being generated
-      const bottomPadding = 100; // Reserve space at bottom for AI response
-      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - bottomPadding);
+      // First scroll to bottom to ensure question is visible, then back up a bit
+      const maxScrollTop = el.scrollHeight - el.clientHeight;
+      const backUpAmount = 80; // Back up from bottom to leave room for AI response
+      el.scrollTop = Math.max(0, maxScrollTop - backUpAmount);
       hasScrolledToNewMessage.current = true;
       return;
     }
